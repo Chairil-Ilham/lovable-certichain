@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, type LinkProps } from "@tanstack/react-router";
 import { LogOut, Menu, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -8,7 +8,7 @@ import { SessionService } from "@/lib/certichain/session";
 import { useSession } from "@/hooks/use-certichain";
 
 export interface NavItem {
-  to: string;
+  to: LinkProps["to"];
   label: string;
   icon: LucideIcon;
   exact?: boolean;
@@ -25,7 +25,7 @@ function SideNav({ items, onNavigate, footer }: { items: NavItem[]; onNavigate?:
       <nav className="flex-1 space-y-1 px-3">
         {items.map((it) => (
           <Link
-            key={it.to}
+            key={String(it.to)}
             to={it.to}
             onClick={onNavigate}
             activeOptions={{ exact: it.exact }}
