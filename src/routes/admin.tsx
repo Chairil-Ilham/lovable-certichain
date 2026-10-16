@@ -21,7 +21,7 @@ const NAV: NavItem[] = [
 
 function AdminLayout() {
   const session = useSession();
-  if (session?.role !== "admin") return <Navigate to="/login" search={{ peran: "admin" }} />;
+  if (session?.role !== "admin") return <Navigate to="/login" />;
   return (
     <DashboardShell
       items={NAV}

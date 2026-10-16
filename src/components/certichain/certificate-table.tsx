@@ -14,7 +14,7 @@ import type { Certificate, DisplayStatus } from "@/lib/certichain/types";
 
 type Role = "admin" | "student";
 
-export function CertificateTable({ certificates, role, loading }: { certificates: Certificate[]; role: Role; loading?: boolean }) {
+export function CertificateTable({ certificates, role, loading }: { certificates: Certificate[]; role: Role; loading?: boolean | undefined }) {
   if (loading)
     return (
       <div className="space-y-2 p-4">
@@ -84,7 +84,7 @@ export function CertificateTable({ certificates, role, loading }: { certificates
 
 const PAGE = 6;
 
-export function CertificateBrowser({ certificates, role, loading }: { certificates: Certificate[]; role: Role; loading?: boolean }) {
+export function CertificateBrowser({ certificates, role, loading }: { certificates: Certificate[]; role: Role; loading?: boolean | undefined }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"ALL" | DisplayStatus>("ALL");
   const [page, setPage] = useState(1);

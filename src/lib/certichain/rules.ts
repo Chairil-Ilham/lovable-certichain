@@ -3,7 +3,7 @@ import type { Certificate, CertificateInput, DisplayStatus, Issuer } from "./typ
 export const KNOWN_ISSUERS: Issuer[] = [
   { id: "ISSUER-UNF-001", name: "Universitas Nusantara Fiktif (Prototype)" },
 ];
-export const DEFAULT_ISSUER = KNOWN_ISSUERS[0];
+export const DEFAULT_ISSUER: Issuer = KNOWN_ISSUERS[0]!;
 
 export function nextCertificateCode(existingCodes: string[], year: number): string {
   const prefix = `CERT-${year}-`;

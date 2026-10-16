@@ -8,8 +8,8 @@ export interface CertificateEvent {
   type: "ISSUED" | "CHAIN_REGISTERED" | "CHAIN_FAILED" | "REVOKED" | "CHAIN_REVOKED";
   at: string;
   actor: string;
-  note?: string;
-  reference?: string;
+  note?: string | undefined;
+  reference?: string | undefined;
 }
 
 export interface CertificateInput {
@@ -19,7 +19,7 @@ export interface CertificateInput {
   organizer: string;
   activityDate: string; // YYYY-MM-DD
   issueDate: string; // YYYY-MM-DD
-  notes?: string;
+  notes?: string | undefined;
 }
 
 export interface Certificate extends CertificateInput {
@@ -28,16 +28,16 @@ export interface Certificate extends CertificateInput {
   issuerId: string;
   issuerName: string;
   status: CertificateStatus;
-  revokedAt?: string;
-  revokeReason?: string;
+  revokedAt?: string | undefined;
+  revokeReason?: string | undefined;
   dataHash: string;
-  documentHash?: string;
+  documentHash?: string | undefined;
   chainStatus: ChainStatus;
   chainMode: ChainMode;
   /** Demo mode: simulation reference (NOT a transaction hash). */
-  chainReference?: string;
+  chainReference?: string | undefined;
   /** Only set when a real EVM transaction is confirmed. */
-  txHash?: string;
+  txHash?: string | undefined;
   createdAt: string;
   events: CertificateEvent[];
 }

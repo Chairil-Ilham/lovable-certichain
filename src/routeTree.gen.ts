@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as MahasiswaRouteImport } from './routes/mahasiswa'
+import { Route as VerifikasiRouteImport } from './routes/verifikasi'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminRiwayatRouteImport } from './routes/admin.riwayat'
 import { Route as MahasiswaIndexRouteImport } from './routes/mahasiswa.index'
@@ -30,9 +32,19 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MahasiswaRoute = MahasiswaRouteImport.update({
   id: '/mahasiswa',
   path: '/mahasiswa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifikasiRoute = VerifikasiRouteImport.update({
+  id: '/verifikasi',
+  path: '/verifikasi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -74,7 +86,9 @@ const MahasiswaSertifikatKodeRoute = MahasiswaSertifikatKodeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/login': typeof LoginRoute
   '/mahasiswa': typeof MahasiswaRouteWithChildren
+  '/verifikasi': typeof VerifikasiRoute
   '/admin/riwayat': typeof AdminRiwayatRoute
   '/admin/': typeof AdminIndexRoute
   '/mahasiswa/': typeof MahasiswaIndexRoute
@@ -85,6 +99,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/verifikasi': typeof VerifikasiRoute
   '/admin/riwayat': typeof AdminRiwayatRoute
   '/admin': typeof AdminIndexRoute
   '/mahasiswa': typeof MahasiswaIndexRoute
@@ -97,7 +113,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/login': typeof LoginRoute
   '/mahasiswa': typeof MahasiswaRouteWithChildren
+  '/verifikasi': typeof VerifikasiRoute
   '/admin/riwayat': typeof AdminRiwayatRoute
   '/admin/': typeof AdminIndexRoute
   '/mahasiswa/': typeof MahasiswaIndexRoute
@@ -111,7 +129,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/login'
     | '/mahasiswa'
+    | '/verifikasi'
     | '/admin/riwayat'
     | '/admin/'
     | '/mahasiswa/'
@@ -122,6 +142,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
+    | '/verifikasi'
     | '/admin/riwayat'
     | '/admin'
     | '/mahasiswa'
@@ -133,7 +155,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/login'
     | '/mahasiswa'
+    | '/verifikasi'
     | '/admin/riwayat'
     | '/admin/'
     | '/mahasiswa/'
@@ -146,7 +170,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  LoginRoute: typeof LoginRoute
   MahasiswaRoute: typeof MahasiswaRouteWithChildren
+  VerifikasiRoute: typeof VerifikasiRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -165,11 +191,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mahasiswa': {
       id: '/mahasiswa'
       path: '/mahasiswa'
       fullPath: '/mahasiswa'
       preLoaderRoute: typeof MahasiswaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verifikasi': {
+      id: '/verifikasi'
+      path: '/verifikasi'
+      fullPath: '/verifikasi'
+      preLoaderRoute: typeof VerifikasiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -259,7 +299,9 @@ const MahasiswaRouteWithChildren = MahasiswaRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  LoginRoute: LoginRoute,
   MahasiswaRoute: MahasiswaRouteWithChildren,
+  VerifikasiRoute: VerifikasiRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
