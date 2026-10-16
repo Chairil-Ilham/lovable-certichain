@@ -16,7 +16,7 @@ const NAV: NavItem[] = [
 
 function StudentLayout() {
   const session = useSession();
-  if (session?.role !== "student") return <Navigate to="/login" search={{ peran: "mahasiswa" }} />;
+  if (session?.role !== "student") return <Navigate to="/login" />;
   return (
     <DashboardShell items={NAV}>
       <Outlet />

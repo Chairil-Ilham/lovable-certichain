@@ -8,7 +8,7 @@ import { SessionService } from "@/lib/certichain/session";
 import { useSession } from "@/hooks/use-certichain";
 
 export interface NavItem {
-  to: LinkProps["to"];
+  to: NonNullable<LinkProps["to"]>;
   label: string;
   icon: LucideIcon;
   exact?: boolean;

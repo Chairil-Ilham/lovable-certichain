@@ -31,7 +31,7 @@ export interface VerificationReport {
   result: VerificationResult;
   certificate?: PublicCertificateView;
   checks: VerificationCheck[];
-  file?: { name: string; hash: string; matches: boolean };
+  file?: { name: string; hash: string; matches: boolean } | undefined;
   checkedAt: string;
 }
 

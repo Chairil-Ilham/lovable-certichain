@@ -11,7 +11,7 @@ import { fmtDate, fmtDateTime } from "@/lib/certichain/format";
 
 export const Route = createFileRoute("/verifikasi")({
   ssr: false,
-  validateSearch: (s: Record<string, unknown>) => ({ kode: typeof s.kode === "string" ? s.kode : undefined }),
+  validateSearch: (s: Record<string, unknown>): { kode?: string } => (typeof s["kode"] === "string" ? { kode: s["kode"] } : {}),
   head: () => ({
     meta: [
       { title: "Verifikasi Sertifikat — CertiChain" },

@@ -4,7 +4,6 @@ import { PublicLayout } from "@/components/certichain/public-layout";
 import { DEMO_STUDENTS, SessionService } from "@/lib/certichain/session";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (s: Record<string, unknown>) => ({ peran: typeof s.peran === "string" ? s.peran : undefined }),
   head: () => ({
     meta: [
       { title: "Masuk — CertiChain" },
