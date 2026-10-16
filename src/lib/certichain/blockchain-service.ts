@@ -49,9 +49,11 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 class MockBlockchainService implements BlockchainService {
   readonly mode = "demo" as const;
   readonly label = "MODE DEMO — BELUM TERHUBUNG KE BLOCKCHAIN";
+  /** Skip artificial latency (used when seeding demo data). */
+  fast = false;
 
   async registerCertificate(certificateId: string, hash: string, issuerId: string) {
-    await delay(400);
+    if (!this.fast) await delay(400);
     const r = load();
     if (r[certificateId]) throw new Error("Sertifikat sudah tercatat di registri.");
     const rec: ChainRecord = {
@@ -72,7 +74,7 @@ class MockBlockchainService implements BlockchainService {
     return load()[certificateId] ?? null;
   }
   async revokeCertificate(certificateId: string) {
-    await delay(300);
+    if (!this.fast) await delay(300);
     const r = load();
     const rec = r[certificateId];
     if (!rec) throw new Error("Sertifikat tidak ada di registri.");

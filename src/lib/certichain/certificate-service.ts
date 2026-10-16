@@ -32,6 +32,7 @@ async function computeDocumentHash(c: Certificate) {
 
 async function seed(): Promise<Certificate[]> {
   mockBlockchain.reset();
+  mockBlockchain.fast = true;
   const out: Certificate[] = [];
   for (const s of SEED_CERTIFICATES) {
     const base = { ...s.input, code: s.code, issuerId: DEFAULT_ISSUER.id };
@@ -65,6 +66,7 @@ async function seed(): Promise<Certificate[]> {
     }
     out.push(cert);
   }
+  mockBlockchain.fast = false;
   return out;
 }
 
