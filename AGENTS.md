@@ -8,3 +8,9 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## CertiChain architecture
+- Data access goes through services in `src/lib/certichain/` (Certificate, Verification, Hash, Blockchain); UI never touches storage directly, so the demo localStorage store can be swapped for a database.
+- `blockchainService` is an interface; the mock never fabricates tx hashes (only `SIMULASI-` ids) — swap in an ethers.js implementation for EVM.
+- PDFs are generated deterministically (fixed creation date / file id) so their SHA-256 can be compared on upload.
+- Dashboard routes use `ssr: false` because session and data live in browser storage.
