@@ -19,10 +19,10 @@ export interface PublicCertificateView {
   issuerName: string;
   activityDate: string;
   issueDate: string;
-  revokedAt?: string;
-  revokeReason?: string;
+  revokedAt?: string | undefined;
+  revokeReason?: string | undefined;
   dataHash: string;
-  chainReference?: string;
+  chainReference?: string | undefined;
   chainMode: Certificate["chainMode"];
 }
 

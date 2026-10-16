@@ -28,7 +28,7 @@ function SideNav({ items, onNavigate, footer }: { items: NavItem[]; onNavigate?:
             key={String(it.to)}
             to={it.to}
             onClick={onNavigate}
-            activeOptions={{ exact: it.exact }}
+            activeOptions={{ exact: !!it.exact }}
             className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground"
           >
             <it.icon className="size-4" />
