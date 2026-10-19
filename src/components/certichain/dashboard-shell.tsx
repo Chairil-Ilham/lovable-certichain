@@ -4,6 +4,7 @@ import { LogOut, Menu, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { DemoBanner, Logo } from "./brand";
+import { PhantomWalletButton } from "./phantom-wallet-button";
 import { SessionService } from "@/lib/certichain/session";
 import { useSession } from "@/hooks/use-certichain";
 
@@ -69,11 +70,12 @@ export function DashboardShell({ items, children, footer }: { items: NavItem[]; 
       </Sheet>
       <div className="lg:pl-60">
         <DemoBanner />
-        <div className="flex items-center gap-2 border-b px-4 py-2 lg:hidden">
-          <Button variant="ghost" size="icon" aria-label="Buka menu" onClick={() => setOpen(true)}>
+        <div className="flex items-center gap-2 border-b px-4 py-2 sm:px-6">
+          <Button variant="ghost" size="icon" aria-label="Buka menu" className="lg:hidden" onClick={() => setOpen(true)}>
             <Menu />
           </Button>
-          <Logo />
+          <div className="lg:hidden"><Logo /></div>
+          <div className="ml-auto"><PhantomWalletButton /></div>
         </div>
         <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
       </div>

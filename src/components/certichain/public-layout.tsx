@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { DemoBanner, Logo } from "./brand";
+import { PhantomWalletButton } from "./phantom-wallet-button";
 
 export function PublicLayout({ children }: { children: ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
             <Link to="/" className="hidden px-2 py-1 text-muted-foreground hover:text-foreground sm:inline">Beranda</Link>
             <a href="/#cara-kerja" className="hidden px-2 py-1 text-muted-foreground hover:text-foreground sm:inline">Cara Kerja</a>
             <Link to="/verifikasi" className="px-2 py-1 text-muted-foreground hover:text-foreground">Verifikasi</Link>
+            <PhantomWalletButton />
             <Button asChild size="sm"><Link to="/login">Login</Link></Button>
           </nav>
         </div>
