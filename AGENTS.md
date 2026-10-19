@@ -14,3 +14,4 @@
 - `blockchainService` is an interface; the mock never fabricates tx hashes (only `SIMULASI-` ids) — swap in an ethers.js implementation for EVM.
 - PDFs are generated deterministically (fixed creation date / file id) so their SHA-256 can be compared on upload.
 - Dashboard routes use `ssr: false` because session and data live in browser storage.
+- Phantom wallet uses the injected `window.phantom.solana` provider via `src/lib/certichain/phantom-wallet.ts` (connect/disconnect only, no signing/transactions) — avoids heavy web3 polyfills and keeps the wallet separate from the certificate services.
