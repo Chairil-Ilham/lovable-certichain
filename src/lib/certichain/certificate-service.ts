@@ -1,28 +1,56 @@
-import { blockchainService, mockBlockchain } from "./blockchain-service";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import { blockchainService } from "./blockchain-service";
 import { HashService } from "./hash-service";
 import { DEFAULT_ISSUER, nextCertificateCode, validateCertificateInput } from "./rules";
-import { SEED_CERTIFICATES } from "./seed";
-import type { Certificate, CertificateInput, Session } from "./types";
+import type { Certificate, CertificateEvent, CertificateInput, Session } from "./types";
 
-const KEY = "certichain.certificates.v1";
+/** Old browser-only store. Read only for the optional backup download; never deleted. */
+export const LEGACY_LOCAL_KEYS = ["certichain.certificates.v1", "certichain.mock-registry.v1"];
+
+type Row = Database["public"]["Tables"]["certificates"]["Row"];
 
 export interface CertStoreState {
   ready: boolean;
+  error?: string | undefined;
   certificates: Certificate[];
 }
 
 let state: CertStoreState = { ready: false, certificates: [] };
 const SERVER_STATE: CertStoreState = { ready: false, certificates: [] };
 const listeners = new Set<() => void>();
-let initPromise: Promise<void> | null = null;
+let loadedFor: string | null = null;
 
-function set(certificates: Certificate[], ready = true) {
-  state = { ready, certificates };
-  localStorage.setItem(KEY, JSON.stringify(certificates));
+function emit(next: CertStoreState) {
+  state = next;
   listeners.forEach((l) => l());
 }
-function update(code: string, fn: (c: Certificate) => Certificate) {
-  set(state.certificates.map((c) => (c.code === code ? fn(c) : c)));
+
+export function rowToCertificate(r: Row): Certificate {
+  return {
+    id: r.id,
+    code: r.code,
+    studentName: r.student_name,
+    nim: r.nim,
+    activity: r.activity,
+    organizer: r.organizer,
+    activityDate: r.activity_date,
+    issueDate: r.issue_date,
+    notes: r.notes ?? undefined,
+    issuerId: r.issuer_id,
+    issuerName: r.issuer_name,
+    status: r.status === "REVOKED" ? "REVOKED" : "ACTIVE",
+    revokedAt: r.revoked_at ?? undefined,
+    revokeReason: r.revoke_reason ?? undefined,
+    dataHash: r.data_hash,
+    documentHash: r.document_hash ?? undefined,
+    chainStatus: r.chain_status as Certificate["chainStatus"],
+    chainMode: r.chain_mode === "evm" ? "evm" : "demo",
+    chainReference: r.chain_reference ?? undefined,
+    txHash: r.tx_hash ?? undefined,
+    createdAt: r.created_at,
+    events: (Array.isArray(r.events) ? r.events : []) as unknown as CertificateEvent[],
+  };
 }
 
 async function computeDocumentHash(c: Certificate) {
@@ -30,48 +58,23 @@ async function computeDocumentHash(c: Certificate) {
   return HashService.sha256Hex(await buildCertificatePdf(c));
 }
 
-async function seed(): Promise<Certificate[]> {
-  mockBlockchain.reset();
-  mockBlockchain.fast = true;
-  const out: Certificate[] = [];
-  for (const s of SEED_CERTIFICATES) {
-    const base = { ...s.input, code: s.code, issuerId: DEFAULT_ISSUER.id };
-    const dataHash = await HashService.hashCertificate(base);
-    const createdAt = `${s.input.issueDate}T03:00:00.000Z`;
-    const cert: Certificate = {
-      ...s.input,
-      id: crypto.randomUUID(),
-      code: s.code,
-      issuerId: DEFAULT_ISSUER.id,
-      issuerName: DEFAULT_ISSUER.name,
-      status: "ACTIVE",
-      dataHash,
-      chainStatus: "NOT_REGISTERED",
-      chainMode: blockchainService.mode,
-      createdAt,
-      events: [{ type: "ISSUED", at: createdAt, actor: "Admin Demo" }],
-    };
-    if (s.register) {
-      const rec = await blockchainService.registerCertificate(cert.code, dataHash, cert.issuerId);
-      cert.chainStatus = rec.confirmed ? "CONFIRMED" : "SIMULATED";
-      cert.chainReference = rec.reference;
-      cert.events.push({ type: "CHAIN_REGISTERED", at: createdAt, actor: "Sistem", reference: rec.reference, note: "Pencatatan simulasi (mode demo)" });
-    }
-    if (s.revoke) {
-      await blockchainService.revokeCertificate(cert.code);
-      cert.status = "REVOKED";
-      cert.revokedAt = new Date().toISOString();
-      cert.revokeReason = s.revoke;
-      cert.events.push({ type: "REVOKED", at: cert.revokedAt, actor: "Admin Demo", note: s.revoke });
-    }
-    out.push(cert);
-  }
-  mockBlockchain.fast = false;
-  return out;
-}
-
 function assertAdmin(session: Session | null) {
   if (session?.role !== "admin") throw new Error("Hanya admin yang berwenang melakukan aksi ini.");
+}
+
+async function fetchAll(): Promise<Certificate[]> {
+  // Access rules decide which rows come back: admins see all, students only their own.
+  const { data, error } = await supabase.from("certificates").select("*").order("created_at", { ascending: false });
+  if (error) throw new Error("Gagal memuat sertifikat dari database.");
+  return data.map(rowToCertificate);
+}
+
+async function patch(code: string, values: Database["public"]["Tables"]["certificates"]["Update"]) {
+  const { data, error } = await supabase.from("certificates").update(values).eq("code", code).select().single();
+  if (error) throw new Error("Gagal menyimpan perubahan ke database.");
+  const cert = rowToCertificate(data);
+  emit({ ...state, certificates: state.certificates.map((c) => (c.code === code ? cert : c)) });
+  return cert;
 }
 
 export const CertificateService = {
@@ -82,45 +85,34 @@ export const CertificateService = {
   getSnapshot: () => state,
   getServerSnapshot: () => SERVER_STATE,
 
-  init() {
-    if (typeof window === "undefined") return Promise.resolve();
-    initPromise ??= (async () => {
-      let list: Certificate[] | null = null;
-      try {
-        list = JSON.parse(localStorage.getItem(KEY) ?? "null");
-      } catch {
-        list = null;
-      }
-      if (!list || !Array.isArray(list)) list = await seed();
-      set(list);
-      // Fill missing document hashes (PDF bytes) in the background.
-      for (const c of list.filter((x) => !x.documentHash)) {
-        const h = await computeDocumentHash(c);
-        update(c.code, (x) => ({ ...x, documentHash: h }));
-      }
-    })();
-    return initPromise;
+  /** Load certificates visible to the signed-in user from the shared database. */
+  async load(userId: string, force = false) {
+    if (!force && loadedFor === userId && state.ready) return;
+    loadedFor = userId;
+    emit({ ready: false, certificates: state.certificates });
+    try {
+      emit({ ready: true, certificates: await fetchAll() });
+    } catch (e) {
+      emit({ ready: true, error: (e as Error).message, certificates: [] });
+    }
   },
-
-  async resetDemo() {
-    localStorage.removeItem(KEY);
-    initPromise = null;
-    state = { ready: false, certificates: [] };
-    listeners.forEach((l) => l());
-    await this.init();
+  clear() {
+    loadedFor = null;
+    emit({ ready: false, certificates: [] });
   },
 
   list: () => state.certificates,
   getByCode: (code: string) => state.certificates.find((c) => c.code === code.trim().toUpperCase()),
-  findByDocumentHash: (h: string) => state.certificates.find((c) => c.documentHash === h),
 
   async create(input: CertificateInput, session: Session | null): Promise<Certificate> {
     assertAdmin(session);
-    await this.init();
     const errors = validateCertificateInput(input);
     if (Object.keys(errors).length) throw new Error("Data sertifikat belum valid.");
     const year = Number(input.issueDate.slice(0, 4));
-    const code = nextCertificateCode(state.certificates.map((c) => c.code), year);
+    // Read codes fresh from the database so other admins' certificates count.
+    const { data: codes, error: codesErr } = await supabase.from("certificates").select("code").like("code", `CERT-${year}-%`);
+    if (codesErr) throw new Error("Gagal membaca database.");
+    const code = nextCertificateCode(codes.map((c) => c.code), year);
     const clean: CertificateInput = {
       studentName: input.studentName.trim(),
       nim: input.nim.trim().toUpperCase(),
@@ -132,9 +124,9 @@ export const CertificateService = {
     };
     const dataHash = await HashService.hashCertificate({ ...clean, code, issuerId: DEFAULT_ISSUER.id });
     const now = new Date().toISOString();
-    let cert: Certificate = {
+    const draft: Certificate = {
       ...clean,
-      id: crypto.randomUUID(),
+      id: "",
       code,
       issuerId: DEFAULT_ISSUER.id,
       issuerName: DEFAULT_ISSUER.name,
@@ -145,21 +137,47 @@ export const CertificateService = {
       createdAt: now,
       events: [{ type: "ISSUED", at: now, actor: session!.name }],
     };
-    cert.documentHash = await computeDocumentHash(cert);
-    set([cert, ...state.certificates]);
+    const documentHash = await computeDocumentHash(draft);
+    const { data, error } = await supabase
+      .from("certificates")
+      .insert({
+        code,
+        student_name: clean.studentName,
+        nim: clean.nim,
+        activity: clean.activity,
+        organizer: clean.organizer,
+        activity_date: clean.activityDate,
+        issue_date: clean.issueDate,
+        notes: clean.notes ?? null,
+        issuer_id: draft.issuerId,
+        issuer_name: draft.issuerName,
+        data_hash: dataHash,
+        document_hash: documentHash,
+        chain_status: "PENDING",
+        chain_mode: draft.chainMode,
+        created_at: now,
+        created_by: session!.userId,
+        events: draft.events as unknown as Row["events"],
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.code === "23505" ? "Kode sertifikat bentrok, coba lagi." : "Gagal menyimpan sertifikat ke database.");
+    let cert = rowToCertificate(data);
+    emit({ ...state, certificates: [cert, ...state.certificates] });
 
     try {
       const rec = await blockchainService.registerCertificate(code, dataHash, cert.issuerId);
-      cert = {
-        ...cert,
-        chainStatus: rec.confirmed ? "CONFIRMED" : "SIMULATED",
-        chainReference: rec.reference,
-        events: [...cert.events, { type: "CHAIN_REGISTERED", at: rec.registeredAt, actor: "Sistem", reference: rec.reference, note: rec.mode === "demo" ? "Pencatatan simulasi (mode demo)" : undefined }],
-      };
+      cert = await patch(code, {
+        chain_status: rec.confirmed ? "CONFIRMED" : "SIMULATED",
+        chain_reference: rec.reference,
+        events: [...cert.events, { type: "CHAIN_REGISTERED", at: rec.registeredAt, actor: "Sistem", reference: rec.reference, note: rec.mode === "demo" ? "Pencatatan simulasi (mode demo)" : undefined }] as unknown as Row["events"],
+      });
     } catch (e) {
-      cert = { ...cert, chainStatus: "FAILED", events: [...cert.events, { type: "CHAIN_FAILED", at: new Date().toISOString(), actor: "Sistem", note: (e as Error).message }] };
+      cert = await patch(code, {
+        chain_status: "FAILED",
+        events: [...cert.events, { type: "CHAIN_FAILED", at: new Date().toISOString(), actor: "Sistem", note: (e as Error).message }] as unknown as Row["events"],
+      });
     }
-    update(code, () => cert);
     return cert;
   },
 
@@ -171,11 +189,11 @@ export const CertificateService = {
     const r = reason.trim();
     if (r.length < 5) throw new Error("Alasan pencabutan minimal 5 karakter.");
     const now = new Date().toISOString();
-    const events = [...cert.events, { type: "REVOKED" as const, at: now, actor: session!.name, note: r }];
+    const events: CertificateEvent[] = [...cert.events, { type: "REVOKED", at: now, actor: session!.name, note: r }];
     if (cert.chainStatus === "SIMULATED" || cert.chainStatus === "CONFIRMED") {
       const rec = await blockchainService.revokeCertificate(code);
       events.push({ type: "CHAIN_REVOKED", at: rec.revokedAt ?? now, actor: "Sistem", note: rec.mode === "demo" ? "Status dicabut di registri simulasi" : undefined });
     }
-    update(code, (c) => ({ ...c, status: "REVOKED", revokedAt: now, revokeReason: r, events }));
+    await patch(code, { status: "REVOKED", revoked_at: now, revoke_reason: r, events: events as unknown as Row["events"] });
   },
 };
