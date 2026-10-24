@@ -48,5 +48,5 @@ export interface Issuer {
 }
 
 export type Session =
-  | { role: "admin"; name: string }
-  | { role: "student"; name: string; nim: string };
+  | { role: "admin"; name: string; userId: string }
+  | { role: "student"; name: string; nim: string; userId: string };

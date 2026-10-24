@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import type { ChainMode } from "./types";
 
 /** Only non-personal data is ever stored on-chain. */
@@ -7,7 +8,7 @@ export interface ChainRecord {
   issuerId: string;
   registeredAt: string;
   revoked: boolean;
-  revokedAt?: string;
+  revokedAt?: string | undefined;
   /** Demo: simulation id. EVM: transaction hash. */
   reference: string;
   confirmed: boolean;
@@ -23,72 +24,73 @@ export interface BlockchainService {
   isCertificateValid(certificateId: string, hash: string): Promise<boolean>;
 }
 
-const REGISTRY_KEY = "certichain.mock-registry.v1";
+type Row = {
+  certificate_code: string;
+  hash: string;
+  issuer_id: string;
+  registered_at: string;
+  revoked: boolean;
+  revoked_at: string | null;
+  reference: string;
+  confirmed: boolean;
+  mode: string;
+};
 
-function load(): Record<string, ChainRecord> {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(localStorage.getItem(REGISTRY_KEY) ?? "{}");
-  } catch {
-    return {};
-  }
+export function toChainRecord(r: Row): ChainRecord {
+  return {
+    certificateId: r.certificate_code,
+    hash: r.hash,
+    issuerId: r.issuer_id,
+    registeredAt: r.registered_at,
+    revoked: r.revoked,
+    revokedAt: r.revoked_at ?? undefined,
+    reference: r.reference,
+    confirmed: r.confirmed,
+    mode: r.mode === "evm" ? "evm" : "demo",
+  };
 }
-function save(r: Record<string, ChainRecord>) {
-  localStorage.setItem(REGISTRY_KEY, JSON.stringify(r));
-}
+
 function simId() {
   const b = crypto.getRandomValues(new Uint8Array(4));
   return "SIMULASI-" + Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("").toUpperCase();
 }
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * Mock registry that mimics the CertiChain smart contract API.
- * It never produces transaction hashes — only clearly-labelled simulation ids.
+ * Simulated registry stored in the shared database (table chain_registry).
+ * Mimics the CertiChain contract API. It never produces transaction hashes —
+ * only clearly-labelled simulation ids — and sends nothing to any blockchain.
  */
 class MockBlockchainService implements BlockchainService {
   readonly mode = "demo" as const;
   readonly label = "MODE DEMO — BELUM TERHUBUNG KE BLOCKCHAIN";
-  /** Skip artificial latency (used when seeding demo data). */
-  fast = false;
 
   async registerCertificate(certificateId: string, hash: string, issuerId: string) {
-    if (!this.fast) await delay(400);
-    const r = load();
-    if (r[certificateId]) throw new Error("Sertifikat sudah tercatat di registri.");
-    const rec: ChainRecord = {
-      certificateId,
-      hash,
-      issuerId,
-      registeredAt: new Date().toISOString(),
-      revoked: false,
-      reference: simId(),
-      confirmed: false,
-      mode: "demo",
-    };
-    r[certificateId] = rec;
-    save(r);
-    return rec;
+    const { data, error } = await supabase
+      .from("chain_registry")
+      .insert({ certificate_code: certificateId, hash, issuer_id: issuerId, reference: simId(), mode: "demo" })
+      .select()
+      .single();
+    if (error) throw new Error(error.code === "23505" ? "Sertifikat sudah tercatat di registri." : "Gagal mencatat ke registri simulasi.");
+    return toChainRecord(data);
   }
   async getCertificate(certificateId: string) {
-    return load()[certificateId] ?? null;
+    const { data, error } = await supabase.from("chain_registry").select("*").eq("certificate_code", certificateId).maybeSingle();
+    if (error) throw new Error("Registri simulasi tidak dapat dibaca.");
+    return data ? toChainRecord(data) : null;
   }
   async revokeCertificate(certificateId: string) {
-    if (!this.fast) await delay(300);
-    const r = load();
-    const rec = r[certificateId];
-    if (!rec) throw new Error("Sertifikat tidak ada di registri.");
-    rec.revoked = true;
-    rec.revokedAt = new Date().toISOString();
-    save(r);
-    return rec;
+    const { data, error } = await supabase
+      .from("chain_registry")
+      .update({ revoked: true, revoked_at: new Date().toISOString() })
+      .eq("certificate_code", certificateId)
+      .select()
+      .maybeSingle();
+    if (error || !data) throw new Error("Sertifikat tidak ada di registri.");
+    return toChainRecord(data);
   }
   async isCertificateValid(certificateId: string, hash: string) {
-    const rec = load()[certificateId];
+    const rec = await this.getCertificate(certificateId);
     return !!rec && !rec.revoked && rec.hash === hash;
-  }
-  reset() {
-    localStorage.removeItem(REGISTRY_KEY);
   }
 }
 

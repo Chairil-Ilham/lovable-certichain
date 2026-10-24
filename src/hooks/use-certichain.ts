@@ -8,12 +8,18 @@ export function useCertificates() {
     CertificateService.getSnapshot,
     CertificateService.getServerSnapshot,
   );
+  const { session } = useSessionState();
+  const uid = session?.userId;
   useEffect(() => {
-    void CertificateService.init();
-  }, []);
+    if (uid) void CertificateService.load(uid);
+  }, [uid]);
   return state;
 }
 
-export function useSession() {
+export function useSessionState() {
   return useSyncExternalStore(SessionService.subscribe, SessionService.getSnapshot, SessionService.getServerSnapshot);
+}
+
+export function useSession() {
+  return useSessionState().session;
 }
