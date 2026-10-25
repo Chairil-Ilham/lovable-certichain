@@ -8,6 +8,13 @@
       "when": 1792833505718,
       "tag": "0000_certichain_shared_store",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792923218325,
+      "tag": "0001_revoke_anon_role_helpers",
+      "breakpoints": true
     }
   ]
 }
