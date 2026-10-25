@@ -25,7 +25,10 @@ function downloadLocalBackup() {
     const v = localStorage.getItem(k);
     if (v) backup[k] = JSON.parse(v);
   }
-  if (!Object.keys(backup).length) return toast.info("Tidak ada data lama di browser ini.");
+  if (!Object.keys(backup).length) {
+    toast.info("Tidak ada data lama di browser ini.");
+    return;
+  }
   const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }));
   const a = Object.assign(document.createElement("a"), { href: url, download: "certichain-cadangan-lokal.json" });
   a.click();

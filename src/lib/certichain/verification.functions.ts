@@ -12,7 +12,7 @@ const HASH_RE = /^[0-9a-f]{64}$/;
  * (masked name, no NIM, no internal notes/events).
  */
 export const verifyCertificateFn = createServerFn({ method: "POST" })
-  .inputValidator((input: { code?: string; fileHash?: string; fileName?: string }) => ({
+  .inputValidator((input: { code?: string | undefined; fileHash?: string | undefined; fileName?: string | undefined }) => ({
     code: typeof input.code === "string" ? input.code.trim().toUpperCase().slice(0, 40) : "",
     fileHash: typeof input.fileHash === "string" && HASH_RE.test(input.fileHash) ? input.fileHash : undefined,
     fileName: typeof input.fileName === "string" ? input.fileName.slice(0, 200) : undefined,
