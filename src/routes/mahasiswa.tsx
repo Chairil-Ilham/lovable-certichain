@@ -1,7 +1,7 @@
-import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { LayoutDashboard, ScanSearch } from "lucide-react";
 import { DashboardShell, type NavItem } from "@/components/certichain/dashboard-shell";
-import { useSession } from "@/hooks/use-certichain";
+import { RoleGate } from "@/components/certichain/auth-gate";
 
 export const Route = createFileRoute("/mahasiswa")({
   ssr: false,
@@ -15,11 +15,11 @@ const NAV: NavItem[] = [
 ];
 
 function StudentLayout() {
-  const session = useSession();
-  if (session?.role !== "student") return <Navigate to="/login" />;
   return (
-    <DashboardShell items={NAV}>
-      <Outlet />
-    </DashboardShell>
+    <RoleGate role="student">
+      <DashboardShell items={NAV}>
+        <Outlet />
+      </DashboardShell>
+    </RoleGate>
   );
 }
