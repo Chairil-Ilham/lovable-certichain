@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { DemoBanner, Logo } from "./brand";
 import { PhantomWalletButton } from "./phantom-wallet-button";
 import { SessionService } from "@/lib/certichain/session";
+import { CertificateService } from "@/lib/certichain/certificate-service";
 import { useSession } from "@/hooks/use-certichain";
 
 export interface NavItem {
@@ -43,8 +44,10 @@ function SideNav({ items, onNavigate, footer }: { items: NavItem[]; onNavigate?:
         <p className="text-xs">{session?.role === "admin" ? "Administrator" : `Mahasiswa · ${session && "nim" in session ? session.nim : ""}`}</p>
         <button
           onClick={() => {
-            SessionService.signOut();
-            navigate({ to: "/login" });
+            void SessionService.signOut().then(() => {
+              CertificateService.clear();
+              navigate({ to: "/login", replace: true });
+            });
           }}
           className="mt-3 flex items-center gap-2 text-xs font-medium hover:text-sidebar-accent-foreground"
         >
