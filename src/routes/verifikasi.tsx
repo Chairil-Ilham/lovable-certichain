@@ -48,8 +48,10 @@ function Verify() {
     try {
       setReport(f ? await VerificationService.verifyFile(f, c) : await VerificationService.verifyByCode(c));
       if (c.trim()) navigate({ search: { kode: c.trim().toUpperCase() }, replace: true });
-    } catch {
-      setError("Terjadi kesalahan saat verifikasi. Coba lagi.");
+    } catch (e) {
+      setReport(null);
+      const offline = typeof navigator !== "undefined" && !navigator.onLine;
+      setError(offline ? "Tidak ada koneksi internet. Periksa jaringan Anda lalu coba lagi." : (e as Error)?.message === "DATABASE_ERROR" ? "Database verifikasi sedang tidak dapat diakses. Coba beberapa saat lagi." : "Gagal menghubungi server verifikasi. Coba lagi.");
     } finally {
       setBusy(false);
     }
@@ -119,7 +121,7 @@ function Verify() {
               </ul>
             )}
             {report.file && <p className="mt-3 font-mono text-xs break-all text-muted-foreground">SHA-256 file: {report.file.hash}</p>}
-            {c?.chainMode === "demo" && <p className="mt-3 text-xs text-warning">Mode demo: pemeriksaan registri memakai simulasi lokal, bukan blockchain nyata.</p>}
+            {c?.chainMode === "demo" && <p className="mt-3 text-xs text-warning">Mode demo: pemeriksaan registri memakai registri simulasi di database bersama, bukan blockchain nyata.</p>}
             <p className="mt-2 text-xs text-muted-foreground">Diperiksa {fmtDateTime(report.checkedAt)}</p>
           </section>
         )}
