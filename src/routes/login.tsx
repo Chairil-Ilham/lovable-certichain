@@ -40,8 +40,14 @@ function Login() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!/^\S+@\S+\.\S+$/.test(email)) return toast.error("Email tidak valid.");
-    if (password.length < 8) return toast.error("Kata sandi minimal 8 karakter.");
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      toast.error("Email tidak valid.");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Kata sandi minimal 8 karakter.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "in") await SessionService.signIn(email.trim(), password);
