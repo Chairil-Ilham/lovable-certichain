@@ -128,6 +128,21 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_accounts: {
+        Row: {
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          kind: string
+          user_id: string
+        }
+        Update: {
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_accounts: {
         Row: {
           created_at: string
@@ -180,6 +195,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_demo_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "student"
